@@ -1,6 +1,6 @@
 # Reel Link
 
-A browser-based tool for tracing cast/crew connections between movies and people using TMDB data — built for figuring out chains in movie connection games and trivia.
+A browser-based tool for tracing connections between movies — built for figuring out games and trivia.
 
 ## Live site
 
