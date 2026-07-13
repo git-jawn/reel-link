@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reel Link — Cine Connection Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14120f;
+    --bg-raised:#1d1a15;
+    --bg-card:#221e18;
+    --line:#3a352c;
+    --paper:#f2ede1;
+    --muted:#a89d88;
+    --muted-dim:#7a705f;
+    --gold:#d4a537;
+    --gold-dim:#9c7d34;
+    --teal:#5fd4c0;
+    --red:#d97a5f;
+    --shadow: 0 10px 30px rgba(0,0,0,0.45);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    position:relative;
+    padding:0 34px;
+  }
+  @media (max-width:640px){ body{ padding:0 14px; } .sprocket{display:none;} }
+
+  /* sprocket rails */
+  .sprocket{
+    position:fixed; top:0; bottom:0; width:22px; z-index:0;
+    background-image: radial-gradient(circle at 50% 20px, var(--bg-raised) 6px, transparent 6.5px);
+    background-size: 22px 40px;
+    background-repeat: repeat-y;
+    opacity:0.9;
+  }
+  .sprocket.left{left:0; border-right:1px solid var(--line);}
+  .sprocket.right{right:0; border-left:1px solid var(--line);}
+
+  .wrap{ max-width:1080px; margin:0 auto; position:relative; z-index:1; padding-bottom:80px;}
+
+  header{ padding:48px 0 28px; border-bottom:1px solid var(--line); margin-bottom:32px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--gold); margin:0 0 10px;
+  }
+  h1{
+    font-family:'Fraunces',serif; font-weight:700; font-size:clamp(32px,5vw,52px);
+    margin:0 0 10px; letter-spacing:-0.01em; line-height:1.02;
+  }
+  header p{ color:var(--muted); max-width:560px; margin:0; font-size:15px; line-height:1.55;}
+
+  /* key setup */
+  .keycard{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px 24px; margin-bottom:34px; box-shadow:var(--shadow);
+  }
+  .keycard h2{ font-family:'Fraunces',serif; font-size:19px; margin:0 0 8px; font-weight:600;}
+  .keycard p{ color:var(--muted); font-size:13.5px; line-height:1.6; margin:0 0 14px;}
+  .keycard a{ color:var(--teal); }
+  .keyrow{ display:flex; gap:10px; flex-wrap:wrap; }
+  input[type=text], input[type=password]{
+    background:var(--bg-raised); border:1px solid var(--line); color:var(--paper);
+    padding:11px 13px; border-radius:7px; font-family:'IBM Plex Mono',monospace; font-size:13px;
+    flex:1; min-width:220px;
+  }
+  input[type=text]:focus, input[type=password]:focus{ outline:none; border-color:var(--gold-dim); }
+  button{
+    background:var(--gold); color:#181410; border:none; padding:11px 18px; border-radius:7px;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  button:hover{ background:#e3b64d; }
+  button.ghost{
+    background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500;
+  }
+  button.ghost:hover{ color:var(--paper); border-color:var(--muted-dim); }
+  button:disabled{ opacity:0.4; cursor:not-allowed; }
+  .keystatus{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--teal); margin-top:10px; display:none;}
+
+  .hidden{ display:none !important; }
+
+  /* slots grid */
+  .slots{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-bottom:30px; }
+  @media (max-width:760px){ .slots{grid-template-columns:1fr;} }
+
+  .slot{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; min-height:120px; box-shadow:var(--shadow);
+  }
+  .slot-label{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--muted-dim); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .slot-label .clear-btn{ cursor:pointer; color:var(--red); font-family:'Inter',sans-serif; text-transform:none; letter-spacing:0; font-size:12px;}
+  .slot-search{ position:relative; }
+  .results-list{
+    position:relative; margin-top:8px; max-height:280px; overflow-y:auto;
+    border:1px solid var(--line); border-radius:7px; background:var(--bg-raised);
+  }
+  .result-item{
+    display:flex; align-items:center; gap:10px; padding:9px 10px; cursor:pointer;
+    border-bottom:1px solid var(--line);
+  }
+  .result-item:last-child{ border-bottom:none; }
+  .result-item:hover{ background:rgba(212,165,55,0.08); }
+  .result-thumb{
+    width:32px; height:32px; border-radius:50%; object-fit:cover; background:var(--line); flex-shrink:0;
+  }
+  .result-thumb.movie{ border-radius:4px; width:26px; height:38px; }
+  .result-meta{ font-size:13px; line-height:1.3; }
+  .result-meta .name{ font-weight:600; }
+  .result-meta .sub{ color:var(--muted); font-size:11.5px; }
+  .tag{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:2px 6px; border-radius:3px;
+    text-transform:uppercase; letter-spacing:0.06em; margin-left:auto; flex-shrink:0;
+  }
+  .tag.person{ background:rgba(95,212,192,0.15); color:var(--teal); }
+  .tag.movie{ background:rgba(212,165,55,0.15); color:var(--gold); }
+
+  /* detail card */
+  .detail{ margin-top:16px; display:flex; gap:14px; }
+  .detail img{ width:70px; border-radius:6px; flex-shrink:0; background:var(--line); }
+  .detail-info h3{ font-family:'Fraunces',serif; font-size:18px; margin:0 0 4px; }
+  .detail-info .sub{ color:var(--muted); font-size:12.5px; margin-bottom:8px;}
+  .stat-row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .stat{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); }
+  .stat b{ color:var(--paper); font-size:13px; display:block; }
+
+  /* sort controls */
+  .sort-row{ display:flex; gap:8px; margin:16px 0 8px; flex-wrap:wrap; }
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; padding:5px 10px; border-radius:20px;
+    border:1px solid var(--line); color:var(--muted); cursor:pointer; background:transparent;
+  }
+  .chip.active{ border-color:var(--gold); color:var(--gold); background:rgba(212,165,55,0.08); }
+
+  .credit-list{ max-height:340px; overflow-y:auto; border-top:1px solid var(--line); margin-top:8px;}
+  .credit-row{
+    display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--line);
+    font-size:12.8px;
+  }
+  .credit-row .ctitle{ flex:1; font-weight:500; }
+  .credit-row .crole{ color:var(--muted); font-size:11.5px; flex:1;}
+  .credit-row .cnums{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); display:flex; gap:10px; }
+  .credit-row .cnums span b{ color:var(--gold); }
+
+  /* bridge / explore panel */
+  .explore-controls{ display:flex; align-items:center; gap:8px; margin-top:16px; flex-wrap:wrap; }
+  .explore-btn{ font-size:12.5px; padding:8px 14px; }
+  .explore-hint{ font-size:11.5px; color:var(--muted-dim); font-family:'IBM Plex Mono',monospace; }
+  .explore-panel{ margin-top:14px; display:grid; gap:12px; }
+  .bridge-movie{
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+  }
+  .bridge-movie-head{ display:flex; gap:10px; align-items:center; margin-bottom:10px; }
+  .bridge-movie-head img{ width:36px; border-radius:4px; flex-shrink:0; background:var(--line); }
+  .bridge-movie-head h4{ margin:0; font-family:'Fraunces',serif; font-size:14.5px; font-weight:600; }
+  .bridge-movie-head .sub{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted-dim); }
+  .bridge-connectors{ display:flex; flex-wrap:wrap; gap:6px; }
+  .rchip{
+    display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:4px 9px 4px 4px;
+    border-radius:16px; border:1px solid var(--line); background:var(--bg-card);
+  }
+  .rchip .rtag{
+    font-family:'IBM Plex Mono',monospace; font-size:8.5px; text-transform:uppercase; letter-spacing:0.05em;
+    padding:2px 6px; border-radius:10px; font-weight:600;
+  }
+  .rchip .rname{ font-weight:500; }
+  .rchip .rpop{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted-dim); }
+  .rchip.hot{ border-color:var(--gold-dim); }
+  .rtag.cast{ background:rgba(95,212,192,0.18); color:var(--teal); }
+  .rtag.director{ background:rgba(212,165,55,0.2); color:var(--gold); }
+  .rtag.dp{ background:rgba(217,122,95,0.2); color:var(--red); }
+  .rtag.composer{ background:rgba(150,150,240,0.2); color:#a3a8f0; }
+  .rtag.writer{ background:rgba(160,200,120,0.2); color:#a8d17a; }
+  .load-more-row{ text-align:center; margin-top:4px; }
+  .load-more-row button{ font-size:12px; padding:7px 14px; }
+  .via-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+  .via-label{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted-dim); text-transform:uppercase; letter-spacing:0.06em; width:100%; margin-bottom:2px; }
+
+  /* brown wall shop */
+  .winfinder{
+    background:var(--bg-card); border:1px solid var(--gold-dim); border-radius:var(--radius);
+    padding:26px; margin-bottom:30px; box-shadow:var(--shadow);
+  }
+  .winfinder h2{ font-family:'Fraunces',serif; font-size:20px; margin:0 0 6px; }
+  .winfinder > p{ color:var(--muted); font-size:13px; line-height:1.55; margin:0 0 18px; max-width:640px; }
+  .wf-row{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:16px; }
+  @media (max-width:760px){ .wf-row{ grid-template-columns:1fr; } }
+  .wf-col{ position:relative; }
+  .wf-selected{
+    display:flex; align-items:center; gap:10px; margin-top:10px; background:var(--bg-raised);
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  }
+  .wf-selected img{ width:28px; border-radius:4px; }
+  .wf-selected .name{ font-weight:600; font-size:13px; flex:1; }
+  .wf-selected .clear-btn{ color:var(--red); font-size:12px; cursor:pointer; }
+  .wf-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .wf-chip{
+    display:flex; align-items:center; gap:6px; background:var(--bg-raised); border:1px solid var(--line);
+    border-radius:20px; padding:5px 6px 5px 10px; font-size:12.5px;
+  }
+  .wf-chip .x{ cursor:pointer; color:var(--red); font-weight:700; padding:0 4px; }
+  .wf-genre-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .wf-genre-row select{
+    background:var(--bg-raised); border:1px solid var(--line); color:var(--paper);
+    padding:10px 12px; border-radius:7px; font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .wf-genre-row select:focus{ outline:none; border-color:var(--gold-dim); }
+  .wf-chip.genre-chip{ border-color:var(--gold-dim); }
+  .wf-find-btn{ margin-top:4px; }
+  .path-card{
+    background:var(--bg-raised); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:10px;
+  }
+  .path-row{ display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+  .path-node{ text-align:center; width:100px; }
+  .path-node img{ width:64px; border-radius:6px; border:2px solid var(--line); }
+  .path-node .pn-name{ font-size:11.5px; margin-top:6px; font-weight:600; line-height:1.25; }
+  .path-arrow{ text-align:center; min-width:120px; }
+  .path-arrow .pa-line{ height:2px; background:repeating-linear-gradient(90deg, var(--gold-dim) 0 5px, transparent 5px 10px); margin-bottom:6px; }
+  .path-arrow .pa-via{ font-size:11px; color:var(--muted); }
+  .path-arrow .pa-via b{ color:var(--gold); }
+  .path-target{
+    margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
+    font-size:13px; color:var(--teal); text-align:center;
+  }
+  .path-target b{ color:var(--paper); }
+  .path-actions{ display:flex; justify-content:center; gap:8px; margin-top:10px; }
+  .path-actions button{ font-size:11px; padding:6px 10px; }
+  .wf-no-match{
+    background:var(--bg-raised); border:1px dashed var(--line); border-radius:8px; padding:14px; margin-bottom:10px;
+    font-size:13px; color:var(--muted);
+  }
+  .wf-no-match b{ color:var(--paper); }
+
+  /* connection panel */
+  .connection{
+    background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px; margin-top:6px; box-shadow:var(--shadow);
+  }
+  .connection h2{ font-family:'Fraunces',serif; font-size:20px; margin:0 0 18px; }
+  .chain-visual{ display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:22px; flex-wrap:wrap;}
+  .chain-node{ text-align:center; width:120px; }
+  .chain-node img{ width:80px; border-radius:8px; border:2px solid var(--line); }
+  .chain-node .cn-name{ font-size:12px; margin-top:8px; font-weight:600; line-height:1.3;}
+  .chain-link{ display:flex; flex-direction:column; align-items:center; padding:0 14px; min-width:80px; }
+  .chain-link .count{ font-family:'IBM Plex Mono',monospace; font-size:22px; color:var(--gold); font-weight:600;}
+  .chain-link .lbl{ font-size:10px; color:var(--muted-dim); text-transform:uppercase; letter-spacing:0.08em; margin-top:2px;}
+  .chain-line{ width:100%; height:2px; background:repeating-linear-gradient(90deg, var(--gold-dim) 0 6px, transparent 6px 12px); margin:6px 0;}
+
+  .shared-list{ display:grid; gap:8px; }
+  .shared-item{
+    display:flex; align-items:center; gap:12px; background:var(--bg-raised); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px;
+  }
+  .shared-item img{ width:34px; height:34px; border-radius:50%; object-fit:cover; background:var(--line); flex-shrink:0;}
+  .shared-item .sname{ font-weight:600; font-size:13.5px; }
+  .shared-item .sroles{ font-size:11.5px; color:var(--muted); }
+  .empty-note{ color:var(--muted); font-size:13.5px; text-align:center; padding:20px 0;}
+
+  .loading{ color:var(--muted-dim); font-family:'IBM Plex Mono',monospace; font-size:12px; padding:10px 0;}
+  footer{ text-align:center; color:var(--muted-dim); font-size:11.5px; padding:30px 0 10px; font-family:'IBM Plex Mono',monospace;}
+  footer a{ color:var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="sprocket left"></div>
+<div class="sprocket right"></div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">TMDB · Cast &amp; Crew Connection Toolkit</p>
+    <h1>Reel Link</h1>
+    <p>Look up any actor, director, cinematographer, or composer — or a film itself — then drop two into the slots below to find exactly who connects them, ranked by how popular or obscure that link is on TMDB.</p>
+  </header>
+
+  <div class="keycard" id="keyCard">
+    <h2>Connect your TMDB key</h2>
+    <p>Reel Link talks directly to The Movie Database from your browser, so it needs your own free API key. Grab one (v3 auth or v4 read token both work) at <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org/settings/api</a>. It's kept only in this tab — not saved, not sent anywhere else.</p>
+    <div class="keyrow">
+      <input type="password" id="apiKeyInput" placeholder="Paste your TMDB API key or read token">
+      <button id="saveKeyBtn">Connect</button>
+    </div>
+    <div class="keystatus" id="keyStatus">✓ Connected for this session</div>
+    <div class="keyerror" id="keyError" style="display:none; margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red); line-height:1.6;"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="winfinder" id="filtersCard">
+      <h2>Filters</h2>
+      <p>Documentaries are hidden everywhere by default. Some titles (like anthology films split across many directors) don't have a clean way to auto-detect, so add them here to exclude them everywhere in the app — searches, credit lists, and connection results.</p>
+      <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:16px; cursor:pointer;">
+        <input type="checkbox" id="hideDocsToggle" checked style="width:16px; height:16px;">
+        Hide documentaries
+      </label>
+      <div class="slot-label"><span>EXCLUDE A SPECIFIC TITLE</span></div>
+      <input type="text" id="excludeInput" placeholder="Search a movie to exclude…">
+      <div class="results-list hidden" id="excludeResults"></div>
+      <div class="wf-chips" id="excludedChips" style="margin-top:12px;"></div>
+    </div>
+    <div class="winfinder">
+      <h2>Brown Wall Shop</h2>
+      <p>Enter a reference film, then add target names and/or target genre+decade combos. This checks the film's actors, director, writer, composer, and cinematographer — and every genre/year combo you set — for a single title that connects them.</p>
+      <div class="wf-row">
+        <div class="wf-col">
+          <div class="slot-label"><span>REFERENCE FILM</span></div>
+          <input type="text" id="wfStartInput" placeholder="Search a movie…">
+          <div class="results-list hidden" id="wfStartResults"></div>
+          <div id="wfStartSelected"></div>
+        </div>
+        <div class="wf-col">
+          <div class="slot-label"><span>TARGET NAME(S)</span></div>
+          <input type="text" id="wfTargetInput" placeholder="Search a person, click to add…">
+          <div class="results-list hidden" id="wfTargetResults"></div>
+        </div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-col" style="grid-column:1 / -1;">
+          <div class="slot-label"><span>OR: TARGET GENRE(S) + DECADE</span></div>
+          <div class="wf-genre-row">
+            <select id="wfGenre1"><option value="">Any genre</option></select>
+            <select id="wfGenre2"><option value="">+ second genre (optional)</option></select>
+            <select id="wfMatchMode">
+              <option value="all">Must match both genres</option>
+              <option value="any">Either genre is fine</option>
+            </select>
+            <select id="wfDecade"><option value="">Any decade</option></select>
+            <button class="ghost" id="wfAddGenreTarget">Add</button>
+          </div>
+          <p class="explore-hint" style="display:block; margin-top:8px;">Older and foreign-language titles are sometimes tagged with only one genre on TMDB even when a second clearly applies (e.g. an action-comedy tagged just "Action"). If a title you expect isn't showing up, try "Either genre is fine."</p>
+        </div>
+      </div>
+      <div class="wf-chips" id="wfTargetChips" style="margin-bottom:14px;"></div>
+      <button class="explore-btn wf-find-btn" id="wfFindBtn" disabled>Find the bridge →</button>
+      <div id="wfResults" class="explore-panel"></div>
+    </div>
+
+    <div class="slots">
+      <div class="slot" id="slotA"></div>
+      <div class="slot" id="slotB"></div>
+    </div>
+
+    <div class="connection" id="connectionPanel">
+      <h2>Connection</h2>
+      <div id="connectionBody"><p class="empty-note">Fill both slots above with a person or a movie to trace the link between them.</p></div>
+    </div>
+  </div>
+
+  <footer>Data from TMDB. Not endorsed or certified by TMDB.</footer>
+</div>
+
+<script>
+const IMG = 'https://image.tmdb.org/t/p/';
+let AUTH = null; // { mode: 'key'|'bearer', value }
+
+function tmdbUrl(path, params) {
+  const url = new URL('https://api.themoviedb.org/3' + path);
+  if (AUTH.mode === 'key') url.searchParams.set('api_key', AUTH.value);
+  for (const k in params) url.searchParams.set(k, params[k]);
+  return url.toString();
+}
+async function tmdb(path, params={}) {
+  const url = tmdbUrl(path, params);
+  const opts = {};
+  if (AUTH.mode === 'bearer') opts.headers = { Authorization: 'Bearer ' + AUTH.value };
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error('TMDB error ' + res.status);
+  return res.json();
+}
+
+// ---------- key setup ----------
+async function attemptConnect() {
+  const input = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('saveKeyBtn');
+  const errBox = document.getElementById('keyError');
+  const statusBox = document.getElementById('keyStatus');
+  errBox.style.display = 'none';
+  statusBox.style.display = 'none';
+
+  const val = input.value.trim();
+  if (!val) {
+    errBox.textContent = 'Paste a key first — there\'s nothing in the box.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  // v4 read tokens are long JWTs (three dot-separated segments, 100+ chars).
+  // v3 keys are short 32-character hex strings — never contain dots.
+  const looksLikeBearer = val.includes('.') && val.split('.').length === 3 && val.length > 60;
+  AUTH = { mode: looksLikeBearer ? 'bearer' : 'key', value: val };
+
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+  try {
+    const res = await fetch(
+      tmdbUrl('/configuration'),
+      AUTH.mode === 'bearer' ? { headers: { Authorization: 'Bearer ' + AUTH.value } } : {}
+    );
+    if (!res.ok) {
+      let detail = '';
+      try { const j = await res.json(); detail = j.status_message || ''; } catch(_) {}
+      throw new Error(`HTTP ${res.status}${detail ? ' — ' + detail : ''}`);
+    }
+    statusBox.style.display = 'block';
+    document.getElementById('app').classList.remove('hidden');
+    initFilters();
+    initSlot('A');
+    initSlot('B');
+    initWinFinder();
+  } catch (e) {
+    AUTH = null;
+    errBox.textContent = 'Connection failed: ' + e.message + '. If this says "Failed to fetch", your browser or network is blocking the request rather than TMDB rejecting the key — try a different browser/network, or double-check you copied the whole key with no extra spaces.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect';
+  }
+}
+document.getElementById('saveKeyBtn').addEventListener('click', attemptConnect);
+document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') attemptConnect();
+});
+
+// ---------- slot state ----------
+const slots = { A: null, B: null }; // holds { type, id, data, credits }
+const exploreState = { A: null, B: null }; // per-slot bridge-explorer state (person -> films)
+const movieConnState = { A: null, B: null }; // per-slot connected-films state (movie -> aggregated films)
+const movieCreditsCache = new Map(); // movie id -> credits response, shared across slots
+
+const CREW_ROLE_MAP = {
+  'Director': { tag: 'director', label: 'Director' },
+  'Director of Photography': { tag: 'dp', label: 'Cinematographer' },
+  'Original Music Composer': { tag: 'composer', label: 'Composer' },
+  'Screenplay': { tag: 'writer', label: 'Writer' },
+  'Writer': { tag: 'writer', label: 'Writer' },
+  'Story': { tag: 'writer', label: 'Writer' }
+};
+const BATCH_SIZE = 8;
+const HOT_THRESHOLD = 15; // popularity above this gets a "hot" highlight
+
+// ---------- movie filtering (documentaries + manual excludes) ----------
+const DOCUMENTARY_GENRE_ID = 99;
+let hideDocumentaries = true;
+const excludedMovies = new Map(); // id -> title, for movies manually excluded (e.g. anthology films)
+
+function isDocumentary(movie) {
+  if (Array.isArray(movie.genre_ids)) return movie.genre_ids.includes(DOCUMENTARY_GENRE_ID);
+  if (Array.isArray(movie.genres)) return movie.genres.some(g => g.id === DOCUMENTARY_GENRE_ID);
+  return false;
+}
+function isMovieAllowed(movie) {
+  if (excludedMovies.has(movie.id)) return false;
+  if (hideDocumentaries && isDocumentary(movie)) return false;
+  return true;
+}
+function filterMovies(list) {
+  return (list || []).filter(isMovieAllowed);
+}
+function renderExcludedChips() {
+  const box = document.getElementById('excludedChips');
+  if (!box) return;
+  if (!excludedMovies.size) { box.innerHTML = '<span class="explore-hint">No specific titles excluded yet.</span>'; return; }
+  box.innerHTML = [...excludedMovies.entries()].map(([id, title]) => `
+    <span class="wf-chip" data-id="${id}"><span>${title}</span><span class="x">×</span></span>
+  `).join('');
+  box.querySelectorAll('.wf-chip .x').forEach(x => {
+    x.addEventListener('click', (e) => {
+      const id = parseInt(e.target.closest('.wf-chip').dataset.id, 10);
+      excludedMovies.delete(id);
+      renderExcludedChips();
+    });
+  });
+}
+
+
+function initSlot(letter) {
+  const el = document.getElementById('slot' + letter);
+  el.innerHTML = `
+    <div class="slot-label"><span>SLOT ${letter}</span><span class="clear-btn" style="display:none">clear</span></div>
+    <div class="slot-search">
+      <input type="text" placeholder="Search a person or a movie…" class="searchInput">
+      <div class="results-list hidden"></div>
+    </div>
+    <div class="slot-content"></div>
+  `;
+  const input = el.querySelector('.searchInput');
+  const resultsBox = el.querySelector('.results-list');
+  const clearBtn = el.querySelector('.clear-btn');
+
+  let debounce;
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    const q = input.value.trim();
+    if (q.length < 2) { resultsBox.classList.add('hidden'); resultsBox.innerHTML=''; return; }
+    debounce = setTimeout(() => runSearch(letter, q, resultsBox), 380);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    slots[letter] = null;
+    input.value = '';
+    input.classList.remove('hidden');
+    el.querySelector('.slot-content').innerHTML = '';
+    clearBtn.style.display = 'none';
+    renderConnection();
+  });
+}
+
+async function runSearch(letter, query, box) {
+  box.innerHTML = '<div class="loading">Searching…</div>';
+  box.classList.remove('hidden');
+  try {
+    const data = await tmdb('/search/multi', { query, include_adult: 'false' });
+    const items = (data.results || [])
+      .filter(r => r.media_type === 'person' || r.media_type === 'movie')
+      .filter(r => r.media_type === 'person' || isMovieAllowed(r))
+      .slice(0, 12);
+    if (!items.length) { box.innerHTML = '<div class="loading">No matches.</div>'; return; }
+    box.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'result-item';
+      const isPerson = item.media_type === 'person';
+      const img = isPerson ? item.profile_path : item.poster_path;
+      const thumb = img ? `<img class="result-thumb ${isPerson?'':'movie'}" src="${IMG}${isPerson?'w92':'w92'}${img}">` : `<div class="result-thumb ${isPerson?'':'movie'}"></div>`;
+      const sub = isPerson ? (item.known_for_department || '') : (item.release_date ? item.release_date.slice(0,4) : '—');
+      row.innerHTML = `${thumb}<div class="result-meta"><div class="name">${isPerson?item.name:item.title}</div><div class="sub">${sub}</div></div><span class="tag ${isPerson?'person':'movie'}">${isPerson?'Person':'Movie'}</span>`;
+      row.addEventListener('click', () => selectItem(letter, item));
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.innerHTML = '<div class="loading">Search failed. Check your API key.</div>';
+  }
+}
+
+async function selectItem(letter, item) {
+  const el = document.getElementById('slot' + letter);
+  const box = el.querySelector('.results-list');
+  const input = el.querySelector('.searchInput');
+  const content = el.querySelector('.slot-content');
+  const clearBtn = el.querySelector('.clear-btn');
+  box.classList.add('hidden');
+  input.classList.add('hidden');
+  clearBtn.style.display = 'inline';
+  content.innerHTML = '<div class="loading">Loading details…</div>';
+
+  const isPerson = item.media_type === 'person';
+  try {
+    if (isPerson) {
+      const [details, credits] = await Promise.all([
+        tmdb(`/person/${item.id}`),
+        tmdb(`/person/${item.id}/movie_credits`)
+      ]);
+      const combined = [...(credits.cast||[]).map(c=>({...c, role: c.character || 'Cast', kind:'cast'})),
+                        ...(credits.crew||[]).map(c=>({...c, role: c.job || c.department, kind:'crew'}))];
+      slots[letter] = { type:'person', id:item.id, data:details, credits: filterMovies(combined) };
+    } else {
+      const [details, credits] = await Promise.all([
+        tmdb(`/movie/${item.id}`),
+        tmdb(`/movie/${item.id}/credits`)
+      ]);
+      slots[letter] = { type:'movie', id:item.id, data:details, credits: { cast:credits.cast, crew:credits.crew } };
+    }
+    renderSlotContent(letter);
+    renderConnection();
+  } catch (e) {
+    content.innerHTML = '<div class="loading">Could not load details.</div>';
+  }
+}
+
+function renderSlotContent(letter) {
+  const slot = slots[letter];
+  const el = document.getElementById('slot' + letter);
+  const content = el.querySelector('.slot-content');
+  if (!slot) { content.innerHTML=''; return; }
+
+  if (slot.type === 'person') {
+    const d = slot.data;
+    const img = d.profile_path ? `${IMG}w185${d.profile_path}` : '';
+    content.innerHTML = `
+      <div class="detail">
+        ${img?`<img src="${img}">`:''}
+        <div class="detail-info">
+          <h3>${d.name}</h3>
+          <div class="sub">${d.known_for_department || 'Person'}${d.birthday? ' · b. '+d.birthday:''}</div>
+          <div class="stat-row">
+            <div class="stat"><b>${d.popularity?.toFixed(1) ?? '—'}</b>Popularity</div>
+            <div class="stat"><b>${slot.credits.length}</b>Total credits</div>
+          </div>
+        </div>
+      </div>
+      <div class="sort-row" data-letter="${letter}">
+        <button class="chip active" data-sort="popularity_desc">Most popular</button>
+        <button class="chip" data-sort="popularity_asc">Least popular</button>
+        <button class="chip" data-sort="rating_desc">Highest rated</button>
+        <button class="chip" data-sort="rating_asc">Lowest rated</button>
+      </div>
+      <div class="credit-list" id="creditList${letter}"></div>
+      <div class="explore-controls">
+        <button class="chip active" data-explore-sort="popularity_desc">Bridge from: most popular films</button>
+        <button class="chip" data-explore-sort="popularity_asc">Bridge from: least popular films</button>
+      </div>
+      <div class="explore-controls">
+        <button class="explore-btn" id="exploreBtn${letter}">Show bridge connections →</button>
+        <span class="explore-hint">Pulls co-stars, director, writer, composer &amp; DP for each film</span>
+      </div>
+      <div class="explore-panel" id="explorePanel${letter}"></div>
+    `;
+  } else {
+    const d = slot.data;
+    const img = d.poster_path ? `${IMG}w185${d.poster_path}` : '';
+    const totalPeople = new Set([...(slot.credits.cast||[]).map(c=>c.id), ...(slot.credits.crew||[]).map(c=>c.id)]).size;
+    content.innerHTML = `
+      <div class="detail">
+        ${img?`<img src="${img}">`:''}
+        <div class="detail-info">
+          <h3>${d.title}</h3>
+          <div class="sub">${d.release_date? d.release_date.slice(0,4):'—'} · ${(d.genres||[]).map(g=>g.name).join(', ')}</div>
+          <div class="stat-row">
+            <div class="stat"><b>${d.popularity?.toFixed(1) ?? '—'}</b>Popularity</div>
+            <div class="stat"><b>${d.vote_average?.toFixed(1) ?? '—'} / 10</b>Rating (${d.vote_count||0} votes)</div>
+            <div class="stat"><b>${totalPeople}</b>Connection potential</div>
+          </div>
+        </div>
+      </div>
+      <div class="sort-row" data-letter="${letter}">
+        <button class="chip active" data-sort="cast">Top billed cast</button>
+        <button class="chip" data-sort="crew">Crew</button>
+        <button class="chip" data-sort="popularity">By person popularity</button>
+      </div>
+      <div class="credit-list" id="creditList${letter}"></div>
+      <div class="explore-controls">
+        <button class="chip active" data-conn-sort="popularity_desc">Most popular connected films</button>
+        <button class="chip" data-conn-sort="popularity_asc">Least popular connected films</button>
+      </div>
+      <div class="explore-controls">
+        <button class="explore-btn" id="connBtn${letter}">Find connected films →</button>
+        <span class="explore-hint">Cross-references this film's actors, director, writer, composer &amp; cinematographer</span>
+      </div>
+      <div class="explore-panel" id="connPanel${letter}"></div>
+    `;
+  }
+
+  el.querySelectorAll('.sort-row .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      el.querySelectorAll('.sort-row .chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      renderCreditList(letter, chip.dataset.sort);
+    });
+  });
+  renderCreditList(letter, slot.type==='person' ? 'popularity_desc' : 'cast');
+
+  if (slot.type === 'person') {
+    exploreState[letter] = { sort: 'popularity_desc', offset: 0, cache: new Map() };
+    el.querySelectorAll('[data-explore-sort]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        el.querySelectorAll('[data-explore-sort]').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        exploreState[letter].sort = chip.dataset.exploreSort;
+        exploreState[letter].offset = 0;
+        document.getElementById('explorePanel' + letter).innerHTML = '';
+      });
+    });
+    const btn = el.querySelector('#exploreBtn' + letter);
+    if (btn) btn.addEventListener('click', () => {
+      btn.textContent = 'Show more bridges →';
+      loadExploreBatch(letter);
+    });
+  }
+
+  if (slot.type === 'movie') {
+    movieConnState[letter] = { sort: 'popularity_desc', aggregate: null, offset: 0 };
+    el.querySelectorAll('[data-conn-sort]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        el.querySelectorAll('[data-conn-sort]').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        const st = movieConnState[letter];
+        st.sort = chip.dataset.connSort;
+        st.offset = 0;
+        document.getElementById('connPanel' + letter).innerHTML = '';
+        if (st.aggregate) renderConnectedFilmsBatch(letter);
+      });
+    });
+    const connBtn = el.querySelector('#connBtn' + letter);
+    if (connBtn) connBtn.addEventListener('click', () => runConnectedFilmsSearch(letter, connBtn));
+  }
+}
+
+function renderCreditList(letter, mode) {
+  const slot = slots[letter];
+  const list = document.getElementById('creditList' + letter);
+  if (!slot) return;
+  let rows = [];
+
+  if (slot.type === 'person') {
+    let items = [...slot.credits];
+    if (mode === 'popularity_desc') items.sort((a,b)=> (b.popularity||0)-(a.popularity||0));
+    if (mode === 'popularity_asc') items.sort((a,b)=> (a.popularity||0)-(b.popularity||0));
+    if (mode === 'rating_desc') items.sort((a,b)=> (b.vote_average||0)-(a.vote_average||0));
+    if (mode === 'rating_asc') items.sort((a,b)=> (a.vote_average||0)-(b.vote_average||0));
+    rows = items.map(m => `
+      <div class="credit-row">
+        <div class="ctitle">${m.title || m.original_title} <span style="color:var(--muted-dim)">${m.release_date?('· '+m.release_date.slice(0,4)):''}</span></div>
+        <div class="crole">${m.role}</div>
+        <div class="cnums"><span>pop <b>${(m.popularity||0).toFixed(1)}</b></span><span>★ <b>${(m.vote_average||0).toFixed(1)}</b></span></div>
+      </div>`);
+  } else {
+    if (mode === 'cast') {
+      rows = [...(slot.credits.cast||[])].sort((a,b)=>a.order-b.order).map(p => `
+        <div class="credit-row">
+          <div class="ctitle">${p.name}</div>
+          <div class="crole">${p.character||''}</div>
+          <div class="cnums"><span>pop <b>${(p.popularity||0).toFixed(1)}</b></span></div>
+        </div>`);
+    } else if (mode === 'crew') {
+      rows = [...(slot.credits.crew||[])].sort((a,b)=>(b.popularity||0)-(a.popularity||0)).map(p => `
+        <div class="credit-row">
+          <div class="ctitle">${p.name}</div>
+          <div class="crole">${p.job||p.department}</div>
+          <div class="cnums"><span>pop <b>${(p.popularity||0).toFixed(1)}</b></span></div>
+        </div>`);
+    } else {
+      const all = [...(slot.credits.cast||[]), ...(slot.credits.crew||[])].sort((a,b)=>(b.popularity||0)-(a.popularity||0));
+      rows = all.map(p => `
+        <div class="credit-row">
+          <div class="ctitle">${p.name}</div>
+          <div class="crole">${p.character || p.job || p.department || ''}</div>
+          <div class="cnums"><span>pop <b>${(p.popularity||0).toFixed(1)}</b></span></div>
+        </div>`);
+    }
+  }
+  list.innerHTML = rows.join('') || '<div class="loading">Nothing to show.</div>';
+}
+
+// ---------- bridge / explore ----------
+async function loadExploreBatch(letter) {
+  const slot = slots[letter];
+  const state = exploreState[letter];
+  if (!slot || !state) return;
+  const panel = document.getElementById('explorePanel' + letter);
+  const btn = document.getElementById('exploreBtn' + letter);
+
+  let movies = [...slot.credits];
+  if (state.sort === 'popularity_desc') movies.sort((a,b)=>(b.popularity||0)-(a.popularity||0));
+  else movies.sort((a,b)=>(a.popularity||0)-(b.popularity||0));
+
+  const batch = movies.slice(state.offset, state.offset + BATCH_SIZE);
+  if (!batch.length) {
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+
+  const loadingRow = document.createElement('div');
+  loadingRow.className = 'loading';
+  loadingRow.textContent = `Loading ${batch.length} film${batch.length>1?'s':''}…`;
+  panel.appendChild(loadingRow);
+
+  const results = await Promise.all(batch.map(async (m) => {
+    if (movieCreditsCache.has(m.id)) return { movie: m, credits: movieCreditsCache.get(m.id) };
+    try {
+      const credits = await tmdb(`/movie/${m.id}/credits`);
+      movieCreditsCache.set(m.id, credits);
+      return { movie: m, credits };
+    } catch (e) {
+      return { movie: m, credits: null };
+    }
+  }));
+
+  loadingRow.remove();
+  results.forEach(r => panel.appendChild(buildBridgeMovieEl(r.movie, r.credits, slot.id)));
+
+  state.offset += batch.length;
+  const remaining = movies.length - state.offset;
+  let moreRow = panel.querySelector('.load-more-row');
+  if (moreRow) moreRow.remove();
+  if (remaining > 0) {
+    moreRow = document.createElement('div');
+    moreRow.className = 'load-more-row';
+    moreRow.innerHTML = `<button class="ghost">Load ${Math.min(BATCH_SIZE, remaining)} more (${remaining} left)</button>`;
+    moreRow.querySelector('button').addEventListener('click', () => { moreRow.remove(); loadExploreBatch(letter); });
+    panel.appendChild(moreRow);
+  }
+}
+
+function buildBridgeMovieEl(movie, credits, originPersonId) {
+  const wrap = document.createElement('div');
+  wrap.className = 'bridge-movie';
+  const poster = movie.poster_path ? `${IMG}w92${movie.poster_path}` : '';
+  const year = movie.release_date ? movie.release_date.slice(0,4) : '—';
+
+  if (!credits) {
+    wrap.innerHTML = `
+      <div class="bridge-movie-head">
+        ${poster?`<img src="${poster}">`:''}
+        <div><h4>${movie.title}</h4><div class="sub">${year} · couldn't load cast/crew</div></div>
+      </div>`;
+    return wrap;
+  }
+
+  const connectors = [];
+  (credits.cast || []).slice(0, 8).forEach(p => {
+    if (p.id === originPersonId) return;
+    connectors.push({ id:p.id, name:p.name, tag:'cast', label:'Cast', popularity:p.popularity||0 });
+  });
+  (credits.crew || []).forEach(p => {
+    if (p.id === originPersonId) return;
+    const roleInfo = CREW_ROLE_MAP[p.job];
+    if (!roleInfo) return;
+    connectors.push({ id:p.id, name:p.name, tag:roleInfo.tag, label:roleInfo.label, popularity:p.popularity||0 });
+  });
+  // de-dupe same person/role combos, sort by popularity (fame) descending
+  const seen = new Set();
+  const deduped = connectors.filter(c => {
+    const k = c.id + ':' + c.tag;
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  }).sort((a,b) => b.popularity - a.popularity);
+
+  const chipsHtml = deduped.length ? deduped.map(c => `
+    <span class="rchip ${c.popularity >= HOT_THRESHOLD ? 'hot':''}">
+      <span class="rtag ${c.tag}">${c.label}</span>
+      <span class="rname">${c.name}</span>
+      <span class="rpop">${c.popularity.toFixed(0)}</span>
+    </span>`).join('') : '<span class="explore-hint">No notable connectors found.</span>';
+
+  wrap.innerHTML = `
+    <div class="bridge-movie-head">
+      ${poster?`<img src="${poster}">`:''}
+      <div><h4>${movie.title}</h4><div class="sub">${year} · pop ${(movie.popularity||0).toFixed(1)} · ★ ${(movie.vote_average||0).toFixed(1)}</div></div>
+    </div>
+    <div class="bridge-connectors">${chipsHtml}</div>
+  `;
+  return wrap;
+}
+
+// ---------- connected films (movie -> aggregated via its people) ----------
+async function aggregateConnectedMovies(contributors, excludeMovieId, onProgress) {
+  const uniquePersonIds = [...new Map(contributors.map(c => [c.id, c])).keys()];
+  const creditsByPerson = new Map();
+  const batchSize = 6;
+  for (let i = 0; i < uniquePersonIds.length; i += batchSize) {
+    const idsBatch = uniquePersonIds.slice(i, i + batchSize);
+    const results = await Promise.all(idsBatch.map(id =>
+      tmdb(`/person/${id}/movie_credits`).catch(() => ({ cast: [], crew: [] }))
+    ));
+    idsBatch.forEach((id, idx) => creditsByPerson.set(id, results[idx]));
+    if (onProgress) onProgress(Math.min(i + batchSize, uniquePersonIds.length), uniquePersonIds.length);
+  }
+  const aggregate = new Map(); // movieId -> { movie, connectors: [...] }
+  contributors.forEach(c => {
+    const pc = creditsByPerson.get(c.id);
+    if (!pc) return;
+    const theirMovies = [...(pc.cast || []), ...(pc.crew || [])];
+    const seenMovieIds = new Set();
+    theirMovies.forEach(m => {
+      if (excludeMovieId && m.id === excludeMovieId) return;
+      if (seenMovieIds.has(m.id)) return;
+      if (!isMovieAllowed(m)) return;
+      seenMovieIds.add(m.id);
+      if (!aggregate.has(m.id)) aggregate.set(m.id, { movie: m, connectors: [] });
+      aggregate.get(m.id).connectors.push(c);
+    });
+  });
+  return { aggregate, uniquePersonIds };
+}
+
+function getMovieContributors(slot) {
+  const cast = [...(slot.credits.cast || [])]
+    .sort((a,b)=>a.order-b.order)
+    .slice(0, 10)
+    .map(p => ({ id:p.id, name:p.name, tag:'cast', label:'Actor', popularity:p.popularity||0 }));
+  const crew = (slot.credits.crew || [])
+    .filter(p => CREW_ROLE_MAP[p.job])
+    .map(p => ({ id:p.id, name:p.name, tag:CREW_ROLE_MAP[p.job].tag, label:CREW_ROLE_MAP[p.job].label, popularity:p.popularity||0 }));
+  const merged = [...cast, ...crew];
+  const seen = new Set();
+  return merged.filter(c => {
+    const k = c.id + ':' + c.tag;
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+async function runConnectedFilmsSearch(letter, btn) {
+  const slot = slots[letter];
+  const state = movieConnState[letter];
+  const panel = document.getElementById('connPanel' + letter);
+  if (!slot || !state) return;
+
+  if (state.aggregate) { renderConnectedFilmsBatch(letter); return; } // already fetched, just show more
+
+  const contributors = getMovieContributors(slot);
+
+  btn.disabled = true;
+  btn.textContent = 'Cross-referencing…';
+  panel.innerHTML = `<div class="loading">Checking filmographies…</div>`;
+
+  let result;
+  try {
+    result = await aggregateConnectedMovies(contributors, slot.id, (done, total) => {
+      panel.innerHTML = `<div class="loading">Checking filmographies… (${done}/${total})</div>`;
+    });
+  } catch (e) {
+    panel.innerHTML = '<div class="loading">Something went wrong pulling filmographies. Try again.</div>';
+    btn.disabled = false;
+    btn.textContent = 'Find connected films →';
+    return;
+  }
+
+  state.aggregate = [...result.aggregate.values()];
+  state.offset = 0;
+  panel.innerHTML = '';
+  btn.disabled = false;
+  btn.textContent = `Refresh (${result.uniquePersonIds.length} contributors checked)`;
+  renderConnectedFilmsBatch(letter);
+}
+
+function renderConnectedFilmsBatch(letter) {
+  const state = movieConnState[letter];
+  const panel = document.getElementById('connPanel' + letter);
+  if (!state || !state.aggregate) return;
+
+  const sorted = [...state.aggregate].sort((a,b) => {
+    const pa = a.movie.popularity || 0, pb = b.movie.popularity || 0;
+    return state.sort === 'popularity_desc' ? pb - pa : pa - pb;
+  });
+
+  const batch = sorted.slice(state.offset, state.offset + BATCH_SIZE);
+  const existingMore = panel.querySelector('.load-more-row');
+  if (existingMore) existingMore.remove();
+
+  if (!batch.length && state.offset === 0) {
+    panel.innerHTML = '<p class="empty-note">No connected films found through this movie\'s main cast and key crew.</p>';
+    return;
+  }
+
+  batch.forEach(entry => panel.appendChild(buildConnectedFilmEl(entry)));
+  state.offset += batch.length;
+
+  const remaining = sorted.length - state.offset;
+  if (remaining > 0) {
+    const moreRow = document.createElement('div');
+    moreRow.className = 'load-more-row';
+    moreRow.innerHTML = `<button class="ghost">Show ${Math.min(BATCH_SIZE, remaining)} more (${remaining} left)</button>`;
+    moreRow.querySelector('button').addEventListener('click', () => { moreRow.remove(); renderConnectedFilmsBatch(letter); });
+    panel.appendChild(moreRow);
+  }
+}
+
+function buildConnectedFilmEl(entry) {
+  const { movie, connectors } = entry;
+  const wrap = document.createElement('div');
+  wrap.className = 'bridge-movie';
+  const poster = movie.poster_path ? `${IMG}w92${movie.poster_path}` : '';
+  const year = movie.release_date ? movie.release_date.slice(0,4) : '—';
+  const sortedConnectors = [...connectors].sort((a,b) => b.popularity - a.popularity);
+  const shown = sortedConnectors.slice(0, 5);
+  const extra = sortedConnectors.length - shown.length;
+
+  const chipsHtml = shown.map(c => `
+    <span class="rchip ${c.popularity >= HOT_THRESHOLD ? 'hot':''}">
+      <span class="rtag ${c.tag}">${c.label}</span>
+      <span class="rname">${c.name}</span>
+      <span class="rpop">${c.popularity.toFixed(0)}</span>
+    </span>`).join('') + (extra > 0 ? `<span class="explore-hint">+${extra} more</span>` : '');
+
+  wrap.innerHTML = `
+    <div class="bridge-movie-head">
+      ${poster?`<img src="${poster}">`:''}
+      <div><h4>${movie.title}</h4><div class="sub">${year} · pop ${(movie.popularity||0).toFixed(1)} · ★ ${(movie.vote_average||0).toFixed(1)}</div></div>
+    </div>
+    <div class="via-row"><span class="via-label">Connected via</span>${chipsHtml}</div>
+  `;
+  return wrap;
+}
+
+function renderConnection() {
+  const body = document.getElementById('connectionBody');
+  const a = slots.A, b = slots.B;
+  if (!a || !b) {
+    body.innerHTML = '<p class="empty-note">Fill both slots above with a person or a movie to trace the link between them.</p>';
+    return;
+  }
+
+  if (a.type === 'movie' && b.type === 'movie') {
+    const peopleA = new Map([...(a.credits.cast||[]), ...(a.credits.crew||[])].map(p=>[p.id,p]));
+    const rolesA = new Map();
+    [...(a.credits.cast||[])].forEach(p=>rolesA.set(p.id, (rolesA.get(p.id)||[]).concat(p.character)));
+    [...(a.credits.crew||[])].forEach(p=>rolesA.set(p.id, (rolesA.get(p.id)||[]).concat(p.job)));
+    const rolesB = new Map();
+    [...(b.credits.cast||[])].forEach(p=>rolesB.set(p.id, (rolesB.get(p.id)||[]).concat(p.character)));
+    [...(b.credits.crew||[])].forEach(p=>rolesB.set(p.id, (rolesB.get(p.id)||[]).concat(p.job)));
+    const peopleB = new Map([...(b.credits.cast||[]), ...(b.credits.crew||[])].map(p=>[p.id,p]));
+    const shared = [...peopleA.keys()].filter(id => peopleB.has(id)).map(id => ({
+      person: peopleA.get(id), rolesA: rolesA.get(id).filter(Boolean), rolesB: rolesB.get(id).filter(Boolean)
+    })).sort((x,y)=>(y.person.popularity||0)-(x.person.popularity||0));
+
+    renderChain(a.data.poster_path?IMG+'w185'+a.data.poster_path:'', a.data.title,
+                b.data.poster_path?IMG+'w185'+b.data.poster_path:'', b.data.title,
+                shared.length, 'shared people');
+
+    const listHtml = shared.length ? shared.map(s => `
+      <div class="shared-item">
+        ${s.person.profile_path?`<img src="${IMG}w92${s.person.profile_path}">`:'<div class="shared-item img" style="width:34px;height:34px;border-radius:50%;background:var(--line)"></div>'}
+        <div>
+          <div class="sname">${s.person.name}</div>
+          <div class="sroles">${a.data.title}: ${s.rolesA.join(', ')||'—'} &nbsp;·&nbsp; ${b.data.title}: ${s.rolesB.join(', ')||'—'}</div>
+        </div>
+      </div>`).join('') : `<p class="empty-note">No shared cast or crew found between these two films (based on main billed cast + crew listed on TMDB).</p>`;
+    document.getElementById('chainExtra').innerHTML = `<div class="shared-list">${listHtml}</div>`;
+  }
+
+  else if (a.type === 'person' && b.type === 'person') {
+    const moviesA = new Map(a.credits.map(m=>[m.id, m]));
+    const moviesB = new Map(b.credits.map(m=>[m.id, m]));
+    const shared = [...moviesA.keys()].filter(id=>moviesB.has(id)).map(id => moviesA.get(id))
+      .sort((x,y)=>(y.popularity||0)-(x.popularity||0));
+
+    renderChain(a.data.profile_path?IMG+'w185'+a.data.profile_path:'', a.data.name,
+                b.data.profile_path?IMG+'w185'+b.data.profile_path:'', b.data.name,
+                shared.length, 'shared films');
+
+    const listHtml = shared.length ? shared.map(m => `
+      <div class="shared-item">
+        ${m.poster_path?`<img style="border-radius:4px" src="${IMG}w92${m.poster_path}">`:'<div style="width:34px;height:34px;border-radius:4px;background:var(--line)"></div>'}
+        <div>
+          <div class="sname">${m.title} <span style="color:var(--muted-dim);font-weight:400">${m.release_date?('· '+m.release_date.slice(0,4)):''}</span></div>
+          <div class="sroles">pop ${(m.popularity||0).toFixed(1)} · ★ ${(m.vote_average||0).toFixed(1)}</div>
+        </div>
+      </div>`).join('') : `<p class="empty-note">These two haven't worked on the same film directly, based on their TMDB filmographies.</p>`;
+    document.getElementById('chainExtra').innerHTML = `<div class="shared-list">${listHtml}</div>`;
+  }
+
+  else {
+    const person = a.type === 'person' ? a : b;
+    const movie = a.type === 'movie' ? a : b;
+    const match = person.credits.find(m => m.id === movie.id);
+    renderChain(person.data.profile_path?IMG+'w185'+person.data.profile_path:'', person.data.name,
+                movie.data.poster_path?IMG+'w185'+movie.data.poster_path:'', movie.data.title,
+                match ? 1 : 0, match ? 'direct credit' : 'no credit found');
+    document.getElementById('chainExtra').innerHTML = match
+      ? `<div class="shared-list"><div class="shared-item"><div><div class="sname">${person.data.name} worked on ${movie.data.title}</div><div class="sroles">Credited as: ${match.role}</div></div></div></div>`
+      : `<p class="empty-note">${person.data.name} doesn't appear in the cast or crew of ${movie.data.title} on TMDB.</p>`;
+  }
+}
+
+function renderChain(imgA, nameA, imgB, nameB, count, label) {
+  const body = document.getElementById('connectionBody');
+  body.innerHTML = `
+    <div class="chain-visual">
+      <div class="chain-node">${imgA?`<img src="${imgA}">`:''}<div class="cn-name">${nameA}</div></div>
+      <div class="chain-link"><div class="chain-line"></div><div class="count">${count}</div><div class="lbl">${label}</div></div>
+      <div class="chain-node">${imgB?`<img src="${imgB}">`:''}<div class="cn-name">${nameB}</div></div>
+    </div>
+    <div id="chainExtra"></div>
+  `;
+}
+
+// ---------- brown wall shop (reference film + target names bridge finder) ----------
+const winFinder = { start: null, targets: [] }; // start: {id,data,credits}; targets: [{id,data,credits}]
+
+function initFilters() {
+  renderExcludedChips();
+  document.getElementById('hideDocsToggle').addEventListener('change', (e) => {
+    hideDocumentaries = e.target.checked;
+  });
+
+  const input = document.getElementById('excludeInput');
+  const results = document.getElementById('excludeResults');
+  let debounce;
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    const q = input.value.trim();
+    if (q.length < 2) { results.classList.add('hidden'); results.innerHTML=''; return; }
+    debounce = setTimeout(async () => {
+      results.innerHTML = '<div class="loading">Searching…</div>';
+      results.classList.remove('hidden');
+      try {
+        const data = await tmdb('/search/movie', { query: q });
+        const items = (data.results || []).slice(0, 10);
+        if (!items.length) { results.innerHTML = '<div class="loading">No matches.</div>'; return; }
+        results.innerHTML = '';
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'result-item';
+          const thumb = item.poster_path ? `<img class="result-thumb movie" src="${IMG}w92${item.poster_path}">` : '<div class="result-thumb movie"></div>';
+          row.innerHTML = `${thumb}<div class="result-meta"><div class="name">${item.title}</div><div class="sub">${item.release_date?item.release_date.slice(0,4):'—'}</div></div>`;
+          row.addEventListener('click', () => {
+            excludedMovies.set(item.id, item.title);
+            renderExcludedChips();
+            results.classList.add('hidden');
+            input.value = '';
+          });
+          results.appendChild(row);
+        });
+      } catch (e) {
+        results.innerHTML = '<div class="loading">Search failed.</div>';
+      }
+    }, 380);
+  });
+}
+
+const DECADES = [
+  { value: '1950', label: "1950s", start: 1950, end: 1959 },
+  { value: '1960', label: "1960s", start: 1960, end: 1969 },
+  { value: '1970', label: "1970s", start: 1970, end: 1979 },
+  { value: '1980', label: "1980s", start: 1980, end: 1989 },
+  { value: '1990', label: "1990s", start: 1990, end: 1999 },
+  { value: '2000', label: "2000s", start: 2000, end: 2009 },
+  { value: '2010', label: "2010s", start: 2010, end: 2019 },
+  { value: '2020', label: "2020s", start: 2020, end: 2029 }
+];
+let MOVIE_GENRES = [];
+
+async function populateGenreAndDecadeSelects() {
+  const g1 = document.getElementById('wfGenre1');
+  const g2 = document.getElementById('wfGenre2');
+  const dec = document.getElementById('wfDecade');
+
+  DECADES.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d.value; opt.textContent = d.label;
+    dec.appendChild(opt);
+  });
+
+  try {
+    if (!MOVIE_GENRES.length) {
+      const data = await tmdb('/genre/movie/list');
+      MOVIE_GENRES = (data.genres || []).filter(g => g.id !== DOCUMENTARY_GENRE_ID);
+    }
+    MOVIE_GENRES.forEach(g => {
+      const o1 = document.createElement('option'); o1.value = g.id; o1.textContent = g.name; g1.appendChild(o1);
+      const o2 = document.createElement('option'); o2.value = g.id; o2.textContent = g.name; g2.appendChild(o2);
+    });
+  } catch (e) { /* selects just stay at "Any genre" if this fails */ }
+}
+
+function addWfGenreTarget() {
+  const g1 = document.getElementById('wfGenre1');
+  const g2 = document.getElementById('wfGenre2');
+  const dec = document.getElementById('wfDecade');
+  const mode = document.getElementById('wfMatchMode');
+
+  const genreIds = [g1.value, g2.value].filter(Boolean).map(v => parseInt(v, 10));
+  const decadeVal = dec.value;
+  const matchMode = genreIds.length > 1 ? mode.value : 'all'; // mode only matters with 2 genres
+  if (!genreIds.length && !decadeVal) return; // need at least one criterion
+
+  const genreNames = genreIds.map(id => (MOVIE_GENRES.find(g => g.id === id) || {}).name).filter(Boolean);
+  const decadeInfo = decadeVal ? DECADES.find(d => d.value === decadeVal) : null;
+  const joiner = matchMode === 'any' ? ' or ' : ' + ';
+  const label = [genreNames.join(joiner) || null, decadeInfo ? decadeInfo.label : null].filter(Boolean).join(' · ') || 'Any';
+
+  const targetId = 'genre_' + genreIds.sort().join('-') + '_' + matchMode + '_' + (decadeVal || 'any');
+  if (winFinder.targets.some(t => t.id === targetId)) return;
+  if (winFinder.targets.length >= 15) return;
+
+  winFinder.targets.push({
+    type: 'genre', id: targetId, name: label, matchMode,
+    genreIds, decadeStart: decadeInfo ? decadeInfo.start : null, decadeEnd: decadeInfo ? decadeInfo.end : null
+  });
+  renderWfChips();
+  updateWfFindBtn();
+  g1.value = ''; g2.value = ''; dec.value = ''; mode.value = 'all';
+}
+
+function initWinFinder() {
+  const startInput = document.getElementById('wfStartInput');
+  const startResults = document.getElementById('wfStartResults');
+  const targetInput = document.getElementById('wfTargetInput');
+  const targetResults = document.getElementById('wfTargetResults');
+  const findBtn = document.getElementById('wfFindBtn');
+
+  populateGenreAndDecadeSelects();
+  document.getElementById('wfAddGenreTarget').addEventListener('click', addWfGenreTarget);
+
+  let startDebounce;
+  startInput.addEventListener('input', () => {
+    clearTimeout(startDebounce);
+    const q = startInput.value.trim();
+    if (q.length < 2) { startResults.classList.add('hidden'); startResults.innerHTML=''; return; }
+    startDebounce = setTimeout(async () => {
+      startResults.innerHTML = '<div class="loading">Searching…</div>';
+      startResults.classList.remove('hidden');
+      try {
+        const data = await tmdb('/search/movie', { query: q });
+        const items = (data.results || []).filter(isMovieAllowed).slice(0, 10);
+        if (!items.length) { startResults.innerHTML = '<div class="loading">No matches.</div>'; return; }
+        startResults.innerHTML = '';
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'result-item';
+          const thumb = item.poster_path ? `<img class="result-thumb movie" src="${IMG}w92${item.poster_path}">` : '<div class="result-thumb movie"></div>';
+          row.innerHTML = `${thumb}<div class="result-meta"><div class="name">${item.title}</div><div class="sub">${item.release_date?item.release_date.slice(0,4):'—'}</div></div>`;
+          row.addEventListener('click', () => selectWfStart(item));
+          startResults.appendChild(row);
+        });
+      } catch (e) {
+        startResults.innerHTML = '<div class="loading">Search failed.</div>';
+      }
+    }, 380);
+  });
+
+  let targetDebounce;
+  targetInput.addEventListener('input', () => {
+    clearTimeout(targetDebounce);
+    const q = targetInput.value.trim();
+    if (q.length < 2) { targetResults.classList.add('hidden'); targetResults.innerHTML=''; return; }
+    targetDebounce = setTimeout(async () => {
+      targetResults.innerHTML = '<div class="loading">Searching…</div>';
+      targetResults.classList.remove('hidden');
+      try {
+        const data = await tmdb('/search/person', { query: q });
+        const items = (data.results || []).slice(0, 10);
+        if (!items.length) { targetResults.innerHTML = '<div class="loading">No matches.</div>'; return; }
+        targetResults.innerHTML = '';
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'result-item';
+          const thumb = item.profile_path ? `<img class="result-thumb" src="${IMG}w92${item.profile_path}">` : '<div class="result-thumb"></div>';
+          row.innerHTML = `${thumb}<div class="result-meta"><div class="name">${item.name}</div><div class="sub">${item.known_for_department||''}</div></div>`;
+          row.addEventListener('click', () => addWfTarget(item));
+          targetResults.appendChild(row);
+        });
+      } catch (e) {
+        targetResults.innerHTML = '<div class="loading">Search failed.</div>';
+      }
+    }, 380);
+  });
+
+  findBtn.addEventListener('click', runWinFinder);
+}
+
+async function selectWfStart(item) {
+  const startResults = document.getElementById('wfStartResults');
+  const startInput = document.getElementById('wfStartInput');
+  const selectedBox = document.getElementById('wfStartSelected');
+  startResults.classList.add('hidden');
+  startInput.classList.add('hidden');
+  selectedBox.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const [details, credits] = await Promise.all([
+      tmdb(`/movie/${item.id}`),
+      tmdb(`/movie/${item.id}/credits`)
+    ]);
+    winFinder.start = { id: item.id, data: details, credits };
+    const poster = details.poster_path ? `${IMG}w92${details.poster_path}` : '';
+    selectedBox.innerHTML = `
+      <div class="wf-selected">
+        ${poster?`<img src="${poster}">`:''}
+        <div class="name">${details.title} <span style="color:var(--muted-dim);font-weight:400">${details.release_date?('· '+details.release_date.slice(0,4)):''}</span></div>
+        <span class="clear-btn" id="wfClearStart">clear</span>
+      </div>`;
+    document.getElementById('wfClearStart').addEventListener('click', () => {
+      winFinder.start = null;
+      selectedBox.innerHTML = '';
+      startInput.classList.remove('hidden');
+      startInput.value = '';
+      updateWfFindBtn();
+    });
+    updateWfFindBtn();
+  } catch (e) {
+    selectedBox.innerHTML = '<div class="loading">Could not load that film.</div>';
+  }
+}
+
+function addWfTarget(item) {
+  const targetResults = document.getElementById('wfTargetResults');
+  const targetInput = document.getElementById('wfTargetInput');
+  targetResults.classList.add('hidden');
+  targetInput.value = '';
+  if (winFinder.targets.some(t => t.id === item.id)) return;
+  if (winFinder.targets.length >= 15) return;
+  winFinder.targets.push({ type:'person', id: item.id, name: item.name, profile_path: item.profile_path, credits: null });
+  renderWfChips();
+  updateWfFindBtn();
+}
+
+function renderWfChips() {
+  const box = document.getElementById('wfTargetChips');
+  box.innerHTML = winFinder.targets.map(t => `
+    <span class="wf-chip ${t.type==='genre'?'genre-chip':''}" data-id="${t.id}"><span>${t.name}</span><span class="x">×</span></span>
+  `).join('');
+  box.querySelectorAll('.wf-chip .x').forEach(x => {
+    x.addEventListener('click', (e) => {
+      const idAttr = e.target.closest('.wf-chip').dataset.id;
+      winFinder.targets = winFinder.targets.filter(t => String(t.id) !== idAttr);
+      renderWfChips();
+      updateWfFindBtn();
+    });
+  });
+}
+
+function updateWfFindBtn() {
+  document.getElementById('wfFindBtn').disabled = !(winFinder.start && winFinder.targets.length);
+}
+
+async function runWinFinder() {
+  const btn = document.getElementById('wfFindBtn');
+  const results = document.getElementById('wfResults');
+  if (!winFinder.start || !winFinder.targets.length) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  results.innerHTML = '<div class="loading">Checking the film\'s cast &amp; crew…</div>';
+
+  const contributors = getMovieContributors(winFinder.start);
+  let aggResult;
+  try {
+    aggResult = await aggregateConnectedMovies(contributors, winFinder.start.id, (done, total) => {
+      results.innerHTML = `<div class="loading">Checking the film's cast &amp; crew… (${done}/${total})</div>`;
+    });
+  } catch (e) {
+    results.innerHTML = '<div class="loading">Something went wrong. Try again.</div>';
+    btn.disabled = false;
+    btn.textContent = 'Find the bridge →';
+    return;
+  }
+  const aggregate = aggResult.aggregate;
+
+  results.innerHTML = '<div class="loading">Checking target names…</div>';
+
+  const pendingTargets = winFinder.targets.filter(t => t.type === 'person' && !t.credits);
+  const targetBatchSize = 6;
+  for (let i = 0; i < pendingTargets.length; i += targetBatchSize) {
+    const batch = pendingTargets.slice(i, i + targetBatchSize);
+    results.innerHTML = `<div class="loading">Checking target names… (${Math.min(i+targetBatchSize, pendingTargets.length)}/${pendingTargets.length})</div>`;
+    await Promise.all(batch.map(async (t) => {
+      try {
+        const pc = await tmdb(`/person/${t.id}/movie_credits`);
+        t.credits = filterMovies([
+          ...(pc.cast||[]).map(m => ({...m, role: m.character || 'Actor'})),
+          ...(pc.crew||[]).filter(m => CREW_ROLE_MAP[m.job]).map(m => ({...m, role: CREW_ROLE_MAP[m.job].label}))
+        ]);
+      } catch (e) { t.credits = []; }
+    }));
+  }
+
+  results.innerHTML = '';
+  let anyMatch = false;
+
+  winFinder.targets.forEach(t => {
+    const matches = [];
+
+    if (t.type === 'genre') {
+      aggregate.forEach((bridge) => {
+        const m = bridge.movie;
+        const genreIdsOnMovie = m.genre_ids || (m.genres||[]).map(g=>g.id) || [];
+        const genreOk = !t.genreIds.length || (t.matchMode === 'any'
+          ? t.genreIds.some(id => genreIdsOnMovie.includes(id))
+          : t.genreIds.every(id => genreIdsOnMovie.includes(id)));
+        const year = m.release_date ? parseInt(m.release_date.slice(0,4), 10) : null;
+        const decadeOk = !t.decadeStart || (year && year >= t.decadeStart && year <= t.decadeEnd);
+        if (genreOk && decadeOk) {
+          const matchedNames = genreIdsOnMovie
+            .map(id => (MOVIE_GENRES.find(g=>g.id===id)||{}).name)
+            .filter(Boolean).slice(0, 3).join(', ');
+          matches.push({ bridge, targetRole: `${year||'—'} · ${matchedNames}` });
+        }
+      });
+    } else {
+      const seenMovieIds = new Set();
+      (t.credits||[]).forEach(m => {
+        if (seenMovieIds.has(m.id)) return;
+        if (aggregate.has(m.id)) {
+          seenMovieIds.add(m.id);
+          matches.push({ bridge: aggregate.get(m.id), targetRole: m.role });
+        }
+      });
+    }
+
+    matches.sort((a,b) => (b.bridge.movie.popularity||0) - (a.bridge.movie.popularity||0));
+    const top = matches.slice(0, 3);
+
+    if (!top.length) {
+      anyMatchNoteFor(t, results);
+      return;
+    }
+    anyMatch = true;
+    top.forEach(m => results.appendChild(buildPathCard(winFinder.start, m.bridge, t, m.targetRole)));
+  });
+
+  if (!anyMatch) {
+    const note = document.createElement('p');
+    note.className = 'empty-note';
+    note.textContent = 'No single-film bridge found for any target through this movie\'s main cast and key crew. Try exploring a target\'s bridges directly below, or pick a different reference film.';
+    results.prepend(note);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Find the bridge →';
+}
+
+function anyMatchNoteFor(t, results) {
+  const el = document.createElement('div');
+  el.className = 'wf-no-match';
+  if (t.type === 'genre') {
+    el.innerHTML = `No direct bridge found matching <b>${t.name}</b> through this film's main credits. Try a broader genre/decade combo.`;
+  } else {
+    el.innerHTML = `No direct bridge found to <b>${t.name}</b> through this film's main credits.
+      <div class="path-actions"><button class="ghost" id="wfExplore${t.id}">Explore ${t.name} in Slot A →</button></div>`;
+  }
+  results.appendChild(el);
+  const btn = el.querySelector('button');
+  if (btn) btn.addEventListener('click', () => {
+    selectItem('A', { id: t.id, media_type: 'person', name: t.name });
+    document.getElementById('slotA').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function buildPathCard(start, bridge, target, targetRole) {
+  const card = document.createElement('div');
+  card.className = 'path-card';
+  const startPoster = start.data.poster_path ? `${IMG}w92${start.data.poster_path}` : '';
+  const bridgePoster = bridge.movie.poster_path ? `${IMG}w92${bridge.movie.poster_path}` : '';
+  const topConnector = [...bridge.connectors].sort((a,b)=>b.popularity-a.popularity)[0];
+  const verb = target.type === 'genre' ? 'Matches' : 'Stars';
+  const detail = target.type === 'genre' ? targetRole : `<b>${target.name}</b> (${targetRole})`;
+
+  card.innerHTML = `
+    <div class="path-row">
+      <div class="path-node">${startPoster?`<img src="${startPoster}">`:''}<div class="pn-name">${start.data.title}</div></div>
+      <div class="path-arrow"><div class="pa-line"></div><div class="pa-via">via <b>${topConnector.name}</b><br>${topConnector.label}</div></div>
+      <div class="path-node">${bridgePoster?`<img src="${bridgePoster}">`:''}<div class="pn-name">${bridge.movie.title}</div></div>
+    </div>
+    <div class="path-target">✓ ${verb} ${detail} — matches your target ${target.type==='genre'?'genre/decade':'name'}</div>
+    <div class="path-actions"><button class="ghost" id="pathUse${bridge.movie.id}${target.id}">Open ${bridge.movie.title} in Slot B →</button></div>
+  `;
+  card.querySelector('.path-actions button').addEventListener('click', () => {
+    selectItem('B', { id: bridge.movie.id, media_type: 'movie', title: bridge.movie.title });
+    document.getElementById('slotB').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  return card;
+}
+
+</script>
+</body>
+</html>
